@@ -4,6 +4,7 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using TMPro;
 
 public class GameManager : MonoBehaviour
@@ -20,13 +21,29 @@ public class GameManager : MonoBehaviour
 
     public TextMeshProUGUI lossText;
 
+    public TextMeshProUGUI BiscuitCounter;
+
     public int bones;
 
     private int round;
 
+    public int biscuits;
+
     private int bonesBet;
 
-    // public TextMeshProUGUI  BiscuitCounter;
+    private int biscuitRequest;
+
+    public Button buyButton;
+    public SpriteRenderer bonesbuyButton;
+    public SpriteRenderer biscuitbuyButton;
+    public TextMeshProUGUI bonesBuyNum;
+    public TextMeshProUGUI biscuitBuyNum;
+
+    public TMP_InputField biscuitAmount;
+
+    public TextMeshProUGUI validBiscuitText;
+
+    public TextMeshProUGUI biscuitDirectionText;
 
     void Start()
     {
@@ -34,19 +51,44 @@ public class GameManager : MonoBehaviour
         SetBoneText();
         round = 0;
         SetRoundText();
+        biscuitAmount.gameObject.SetActive(false);
+        biscuitDirectionText.gameObject.SetActive(false);
+        toggleConfirmSprites(false);
         validBetText.gameObject.SetActive(false);
-        lossText.gameObject.SetActive(false);
+    }
+
+    void toggleConfirmSprites(bool show)
+    {
+        validBiscuitText.gameObject.SetActive(!show);
+        bet1Button.gameObject.SetActive(!show);
+        betAmount.gameObject.SetActive(!show);
+        buyButton.gameObject.SetActive(show);
+        bonesbuyButton.enabled = show;
+        biscuitbuyButton.enabled = show;
+        bonesBuyNum.gameObject.SetActive(show);
+        biscuitBuyNum.gameObject.SetActive(show);
+        biscuitAmount.gameObject.SetActive(show);
+        biscuitDirectionText.gameObject.SetActive(show);
     }
 
     void SetBoneText()
     {
         bonesCounter.text = ": " + bones.ToString();
     }
+    
+    void SetBiscuitText()
+    {
+        BiscuitCounter.text = ": " + biscuits.ToString();
+    }
 
     void SetRoundText()
     {
-        int roundsLeft = 3 - (round % 3);
+        int roundsLeft = 3 - (round % 3) -1;
         roundCounter.text = "Rounds until exchange: " + roundsLeft.ToString();
+
+        if(roundsLeft == 0){
+            toggleConfirmSprites(true);
+        }
     }
 
     public void PlaceBet1()
@@ -65,6 +107,9 @@ public class GameManager : MonoBehaviour
 
         round++;
         SetRoundText();
+
+        betAmount.text = "";
+        bonesBet = 0;
     }
 
     void CheckLoss()
@@ -72,7 +117,7 @@ public class GameManager : MonoBehaviour
         if(bones <= 0)
         {
             Destroy(gameObject);
-            lossText.text = "You ran out of bones!";
+            lossText.text = "You ran out of bones and ended with " + biscuits + " biscuits";
             lossText.gameObject.SetActive(true);
         }
     }
@@ -81,10 +126,43 @@ public class GameManager : MonoBehaviour
     {
         bonesBet = int.Parse(betAmount);
         if(bonesBet <= 0 || bonesBet > bones){
+            bet1Button.interactable = false;
             validBetText.gameObject.SetActive(true);
         }
         else{
+            bet1Button.interactable = true;
             validBetText.gameObject.SetActive(false);
         }
     }
+
+    public void CheckBiscuitAmount(string biscuitAmount1)
+    {
+        biscuitRequest = int.Parse(biscuitAmount1);
+        int bonesRequest = biscuitRequest * 100;
+        if(bonesRequest >= bones){
+            buyButton.interactable = false;
+            validBiscuitText.gameObject.SetActive(true);
+        }
+        else{
+            buyButton.interactable = true;
+            validBiscuitText.gameObject.SetActive(false);
+        }
+    }
+
+    public void ExchangeBones()
+    {
+        biscuits += biscuitRequest;
+        bones -= biscuitRequest * 100;
+        SetBiscuitText();
+
+        round++;
+        SetRoundText();
+        SetBoneText();
+
+        toggleConfirmSprites(false);
+
+        biscuitAmount.text = "";
+        biscuitRequest = 0;
+    }
+    
 }
