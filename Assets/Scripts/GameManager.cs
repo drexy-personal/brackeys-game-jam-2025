@@ -17,11 +17,17 @@ public class GameManager : MonoBehaviour
 
     public Button bet1Button;
 
+    public Button bet3070Button;
+
+    public Button bet7030Button;
+
     public TextMeshProUGUI validBetText;
 
     public TextMeshProUGUI lossText;
 
     public TextMeshProUGUI BiscuitCounter;
+
+    public TextMeshProUGUI ShopDirection;
 
     public int bones;
 
@@ -34,10 +40,6 @@ public class GameManager : MonoBehaviour
     private int biscuitRequest;
 
     public Button buyButton;
-    public SpriteRenderer bonesbuyButton;
-    public SpriteRenderer biscuitbuyButton;
-    public TextMeshProUGUI bonesBuyNum;
-    public TextMeshProUGUI biscuitBuyNum;
 
     public TMP_InputField biscuitAmount;
 
@@ -47,6 +49,7 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
+        betAmount.text = "0";
         bones = 100;
         SetBoneText();
         round = 0;
@@ -55,30 +58,33 @@ public class GameManager : MonoBehaviour
         biscuitDirectionText.gameObject.SetActive(false);
         toggleConfirmSprites(false);
         validBetText.gameObject.SetActive(false);
+        bet1Button.gameObject.SetActive(true);
+        bet3070Button.gameObject.SetActive(true);
+        bet7030Button.gameObject.SetActive(true);
+        ShopDirection.gameObject.SetActive(false);
     }
 
     void toggleConfirmSprites(bool show)
     {
         validBiscuitText.gameObject.SetActive(!show);
         bet1Button.gameObject.SetActive(!show);
+        bet3070Button.gameObject.SetActive(!show);
+        bet7030Button.gameObject.SetActive(!show);
         betAmount.gameObject.SetActive(!show);
         buyButton.gameObject.SetActive(show);
-        bonesbuyButton.enabled = show;
-        biscuitbuyButton.enabled = show;
-        bonesBuyNum.gameObject.SetActive(show);
-        biscuitBuyNum.gameObject.SetActive(show);
         biscuitAmount.gameObject.SetActive(show);
         biscuitDirectionText.gameObject.SetActive(show);
+        ShopDirection.gameObject.SetActive(show);
     }
 
     void SetBoneText()
     {
-        bonesCounter.text = ": " + bones.ToString();
+        bonesCounter.text = bones.ToString();
     }
     
     void SetBiscuitText()
     {
-        BiscuitCounter.text = ": " + biscuits.ToString();
+        BiscuitCounter.text = biscuits.ToString();
     }
 
     void SetRoundText()
@@ -91,46 +97,107 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void PlaceBet1()
+    public void PlaceBet5050()
     {
         int result = Random.Range(0,2);
         if(result == 0)
         {
             bones = bones + bonesBet;
+            lossText.text = "You won " + bonesBet + " bones";
         }
         else
         {
             bones = bones - bonesBet;
+            lossText.text = "You lost " + bonesBet + " bones";
         }
-        CheckLoss();
         SetBoneText();
 
         round++;
         SetRoundText();
 
-        betAmount.text = "";
+        betAmount.text = "0";
         bonesBet = 0;
+        lossText.gameObject.SetActive(true);
+        CheckLoss();
+    }
+
+    public void PlaceBet3070()
+    {
+        int result = Random.Range(0,10);
+        double payOut = 1.43 * bonesBet;
+        if(result < 3)
+        {
+            bones = bones + (int)System.Math.Floor(payOut);
+            lossText.text = "You won " + (int)System.Math.Floor(payOut) + " bones";
+        }
+        else
+        {
+            bones = bones - bonesBet;
+            lossText.text = "You lost " + bonesBet + " bones";
+        }
+        SetBoneText();
+
+        round++;
+        SetRoundText();
+
+        betAmount.text = "0";
+        bonesBet = 0;
+        lossText.gameObject.SetActive(true);
+        CheckLoss();
+    }
+
+    public void PlaceBet7030()
+    {
+        int result = Random.Range(0,10);
+        double payOut = 3.33 *bonesBet;
+        if(result >= 3)
+        {
+            bones = bones + (int)System.Math.Floor(payOut);
+            lossText.text = "You won " + (int)System.Math.Floor(payOut) + " bones";
+        }
+        else
+        {
+            bones = bones - bonesBet;
+            lossText.text = "You lost " + bonesBet + " bones";
+        }
+        SetBoneText();
+
+        round++;
+        SetRoundText();
+
+        betAmount.text = "0";
+        bonesBet = 0;
+        lossText.gameObject.SetActive(true);
+        CheckLoss();
     }
 
     void CheckLoss()
     {
         if(bones <= 0)
         {
-            Destroy(gameObject);
+            bet1Button.gameObject.SetActive(false);
+            bet3070Button.gameObject.SetActive(false);
+            bet7030Button.gameObject.SetActive(false);
             lossText.text = "You ran out of bones and ended with " + biscuits + " biscuits";
             lossText.gameObject.SetActive(true);
+            Destroy(gameObject);
         }
     }
 
     public void CheckAmount(string betAmount)
     {
+        lossText.gameObject.SetActive(false);
         bonesBet = int.Parse(betAmount);
         if(bonesBet <= 0 || bonesBet > bones){
             bet1Button.interactable = false;
+            bet3070Button.interactable = false;
+            bet7030Button.interactable = false;
             validBetText.gameObject.SetActive(true);
         }
         else{
             bet1Button.interactable = true;
+            bet3070Button.interactable = true;
+            bet7030Button.interactable = true;
             validBetText.gameObject.SetActive(false);
         }
     }
@@ -153,6 +220,7 @@ public class GameManager : MonoBehaviour
     {
         biscuits += biscuitRequest;
         bones -= biscuitRequest * 100;
+        CheckLoss();
         SetBiscuitText();
 
         round++;
@@ -161,7 +229,7 @@ public class GameManager : MonoBehaviour
 
         toggleConfirmSprites(false);
 
-        biscuitAmount.text = "";
+        biscuitAmount.text = "0";
         biscuitRequest = 0;
     }
     
