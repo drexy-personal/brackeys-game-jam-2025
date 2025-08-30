@@ -47,6 +47,30 @@ public class GameManager : MonoBehaviour
 
     public TextMeshProUGUI biscuitDirectionText;
 
+    public SpriteRenderer wheelSprite;
+
+    public Image DogHouse;
+
+    public AnimationRemote animationManager;
+    
+    public SoundManager soundManager;
+
+    public AudioClip buySound;
+
+    public AudioClip endSound;
+
+    public AudioClip winSound;
+
+    public AudioClip loseSound;
+
+    public Animator animator; // Assign your Animator here in the Inspector
+
+    public Button plus1Button;
+
+    public Button halfButton;
+
+    public Button allButton;
+
     void Start()
     {
         betAmount.text = "0";
@@ -62,6 +86,8 @@ public class GameManager : MonoBehaviour
         bet3070Button.gameObject.SetActive(true);
         bet7030Button.gameObject.SetActive(true);
         ShopDirection.gameObject.SetActive(false);
+        wheelSprite.enabled = false;
+        DogHouse.enabled = false;
     }
 
     void toggleConfirmSprites(bool show)
@@ -97,18 +123,16 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    public void PlaceBet5050()
+    public void UpdateUIAfterBet(bool win, int boneDiff)
     {
-        int result = Random.Range(0,2);
-        if(result == 0)
+        if(win)
         {
-            bones = bones + bonesBet;
-            lossText.text = "You won " + bonesBet + " bones";
+            soundManager.PlaySoundClip(winSound);
+            lossText.text = "You won " + boneDiff + " bones";
         }
-        else
-        {
-            bones = bones - bonesBet;
-            lossText.text = "You lost " + bonesBet + " bones";
+        else{
+            lossText.text = "You lost " + boneDiff + " bones";
+            CheckLoss();
         }
         SetBoneText();
 
@@ -118,69 +142,80 @@ public class GameManager : MonoBehaviour
         betAmount.text = "0";
         bonesBet = 0;
         lossText.gameObject.SetActive(true);
-        CheckLoss();
+    }
+
+    public void PlaceBet5050()
+    {
+        int result = Random.Range(0,2);
+        wheelSprite.enabled = true;
+        DogHouse.enabled = true;
+        if(result == 0)
+        {
+            bones = bones + bonesBet;
+            animationManager.HandleGameEnd(true);
+        }
+        else
+        {            
+            bones = bones - bonesBet;
+            animationManager.HandleGameEnd(false);
+        }
+        UpdateUIAfterBet(result == 0, bonesBet);
     }
 
     public void PlaceBet3070()
     {
         int result = Random.Range(0,10);
-        double payOut = 1.43 * bonesBet;
+        wheelSprite.enabled = true;
+        DogHouse.enabled = true;
+        double payOut = (3.33 * bonesBet) - bonesBet;
         if(result < 3)
         {
             bones = bones + (int)System.Math.Floor(payOut);
-            lossText.text = "You won " + (int)System.Math.Floor(payOut) + " bones";
+            animationManager.HandleGameEnd(true);
+            UpdateUIAfterBet(true, (int)System.Math.Floor(payOut));
         }
         else
         {
             bones = bones - bonesBet;
-            lossText.text = "You lost " + bonesBet + " bones";
+            animationManager.HandleGameEnd(false);
+            UpdateUIAfterBet(false, bonesBet);
         }
-        SetBoneText();
-
-        round++;
-        SetRoundText();
-
-        betAmount.text = "0";
-        bonesBet = 0;
-        lossText.gameObject.SetActive(true);
-        CheckLoss();
     }
 
     public void PlaceBet7030()
     {
         int result = Random.Range(0,10);
-        double payOut = 3.33 *bonesBet;
+        wheelSprite.enabled = true;
+        DogHouse.enabled = true;
+        double payOut = (1.43 *bonesBet) - bonesBet;
         if(result >= 3)
         {
+            animationManager.HandleGameEnd(true);
             bones = bones + (int)System.Math.Floor(payOut);
-            lossText.text = "You won " + (int)System.Math.Floor(payOut) + " bones";
+            UpdateUIAfterBet(true, (int)System.Math.Floor(payOut));
         }
         else
         {
+            animationManager.HandleGameEnd(false);
             bones = bones - bonesBet;
-            lossText.text = "You lost " + bonesBet + " bones";
+            UpdateUIAfterBet(false, bonesBet);
         }
-        SetBoneText();
-
-        round++;
-        SetRoundText();
-
-        betAmount.text = "0";
-        bonesBet = 0;
-        lossText.gameObject.SetActive(true);
-        CheckLoss();
     }
 
     void CheckLoss()
     {
         if(bones <= 0)
         {
+            soundManager.PlaySoundClip(endSound);
             bet1Button.gameObject.SetActive(false);
             bet3070Button.gameObject.SetActive(false);
             bet7030Button.gameObject.SetActive(false);
             lossText.text = "You ran out of bones and ended with " + biscuits + " biscuits";
             lossText.gameObject.SetActive(true);
             Destroy(gameObject);
+        }
+        else{
+            soundManager.PlaySoundClip(loseSound);
         }
     }
 
@@ -220,7 +255,6 @@ public class GameManager : MonoBehaviour
     {
         biscuits += biscuitRequest;
         bones -= biscuitRequest * 100;
-        CheckLoss();
         SetBiscuitText();
 
         round++;
@@ -231,6 +265,52 @@ public class GameManager : MonoBehaviour
 
         biscuitAmount.text = "0";
         biscuitRequest = 0;
+        soundManager.PlaySoundClip(buySound);
     }
-    
+
+    public void OnHitPlus1Button()
+    {
+        int roundsLeft = 3 - (round % 3) -1;
+        if(roundsLeft == 0)
+        {
+            int prevBiscuitInput = int.Parse(biscuitAmount.text);
+            biscuitAmount.text = (prevBiscuitInput + 1).ToString();
+        }
+        else
+        {
+            int prevBetInput = int.Parse(betAmount.text);
+            betAmount.text = (prevBetInput + 1).ToString();
+        }
+    }
+
+    public void OnHitHalfButton()
+    {
+        int roundsLeft = 3 - (round % 3) -1;
+        if(roundsLeft == 0)
+        {
+            int halfBiscuitCanBuy = bones/200;
+            biscuitAmount.text = halfBiscuitCanBuy.ToString();
+        }
+        else
+        {
+            int halfBones = bones/2;
+            betAmount.text = halfBones.ToString();
+        }
+    }
+
+    public void OnHitAllButton()
+    {
+        int roundsLeft = 3 - (round % 3) -1;
+        if(roundsLeft == 0)
+        {
+            int AllBiscuits = bones/100;
+            biscuitAmount.text = AllBiscuits.ToString();
+        }
+        else
+        {
+            int AllBones = bones;
+            betAmount.text = AllBones.ToString();
+        }
+    }
+
 }
